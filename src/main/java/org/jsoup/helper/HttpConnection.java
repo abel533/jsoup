@@ -527,21 +527,34 @@ public class HttpConnection implements Connection {
         }
 
         // set up connection defaults, and details from request
-        private static HttpURLConnection createConnection(Connection.Request req) throws IOException {
-            HttpURLConnection conn = (HttpURLConnection) req.url().openConnection();
-            conn.setRequestMethod(req.method().name());
-            conn.setInstanceFollowRedirects(false); // don't rely on native redirection support
-            conn.setConnectTimeout(req.timeout());
-            conn.setReadTimeout(req.timeout());
-            if (req.method() == Method.POST)
-                conn.setDoOutput(true);
-            if (req.cookies().size() > 0)
-                conn.addRequestProperty("Cookie", getRequestCookieString(req));
-            for (Map.Entry<String, String> header : req.headers().entrySet()) {
-                conn.addRequestProperty(header.getKey(), header.getValue());
-            }
-            return conn;
-        }
+	private static HttpURLConnection createConnection(Connection.Request req)
+	throws IOException {
+		HttpURLConnection conn = null;
+		if (req.getProxyHost() != null && req.getProxyPort() != null) {
+		
+		// http代理
+		Proxy proxy = new Proxy(Proxy.Type.HTTP,
+		new InetSocketAddress(req.getProxyHost(),
+		Integer.valueOf(req.getProxyPort())));
+		conn = (HttpURLConnection) req.url().openConnection(proxy);
+		} else {
+		conn = (HttpURLConnection) req.url().openConnection();
+		}
+		
+		conn.setRequestMethod(req.method().name());
+		conn.setInstanceFollowRedirects(false); // don't rely on native
+		// redirection support
+		conn.setConnectTimeout(req.timeout());
+		conn.setReadTimeout(req.timeout());
+		if (req.method() == Method.POST)
+		conn.setDoOutput(true);
+		if (req.cookies().size() > 0)
+		conn.addRequestProperty("Cookie", getRequestCookieString(req));
+		for (Map.Entry<String, String> header : req.headers().entrySet()) {
+		conn.addRequestProperty(header.getKey(), header.getValue());
+		}
+		return conn;
+	}
 
         // set up url, method, header, cookies
         private void setupFromConnection(HttpURLConnection conn, Connection.Response previousResponse) throws IOException {
